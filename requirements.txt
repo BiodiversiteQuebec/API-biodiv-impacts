@@ -2,3 +2,8 @@ fastapi[standard]
 pydantic
 uvicorn
 git+https://github.com/BiodiversiteQuebec/bq_impact_indicators.git
+
+# Ploting
+matplotlib
+io
+numpy

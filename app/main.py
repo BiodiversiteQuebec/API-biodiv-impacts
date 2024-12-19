@@ -6,6 +6,10 @@ import geojson
 import json
 from typing import List, Literal
 from fastapi import Body
+from fastapi.responses import StreamingResponse
+import matplotlib.pyplot as plt
+import io
+import numpy as np
 
 from app.indicators.indicateur1 import compute_indicateur1
 from app.types.types import IndicateursRequest
@@ -236,3 +240,71 @@ def species_at_risk_indicator(geojson: dict):
     """
     result = compute_species_at_risk(geojson)
     return {"Espèces en péril": result}
+
+
+plt.rcParams['font.family'] = 'sans-serif'
+
+@app.get("/graph")
+def generate_graph():
+    # Données de l'exemple
+    categories = ["Destruction d'habitat", "Espèces exotiques envahissantes", "Services écosystémiques", 
+                  "Espèces à statut", "Stresseurs cumulés", "Destruction des puits de carbone",
+                  "Connectivité", "Pollution", "Conservation"]
+    ## Add a few white spaces to the right of the categories
+    categories = [cat + " " * 10 for cat in categories]
+    values = [0.77, 0.50, 0.39, 0.37, 0.20, 0.16, 0.15, 0.12, 0.07]
+
+    # Trier les catégories et les valeurs en fonction des valeurs
+    sorted_pairs = sorted(zip(values, categories), reverse=False)
+    sorted_values, sorted_categories = zip(*sorted_pairs)
+
+    # Création du graphique avec Matplotlib
+    plt.figure(figsize=(7, 4), facecolor='none')
+    # plt.hlines(y=sorted_categories, xmin=0, xmax=1, color='gray', alpha=0.7)
+    # plt.scatter(sorted_values, sorted_categories, color='black', zorder=8)
+
+    # # Ajouter les valeurs à côté des catégories
+    # for value, category in zip(sorted_values, sorted_categories):
+    #     plt.text(-0.06, category, f'{value:.2f}', va='center', ha='left', color='black')
+
+    # Utiliser un colormap pour le dégradé de couleur
+    cmap = plt.get_cmap("RdYlGn_r")
+    norm = plt.Normalize(0, 1)
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+
+    # Fonction pour dessiner une ligne avec un dégradé
+    def draw_gradient_line(y, xmin, xmax):
+        for i in range(256):
+            plt.plot([xmin + i * (xmax - xmin) / 256, xmin + (i + 1) * (xmax - xmin) / 256], [y, y], color=cmap(gradient[0, i]), alpha=0.7)
+
+    # Dessiner les lignes horizontales avec un dégradé de couleur
+    for value, category in zip(sorted_values, sorted_categories):
+        draw_gradient_line(category, 0, 1)
+
+    # Ajouter les valeurs à côté des catégories
+    for value, category in zip(sorted_values, sorted_categories):
+        plt.scatter(value, category, color='black', zorder=8, s=300)
+        plt.text(-0.17, category, f'{value:.2f}', va='center', ha='left', color='black')
+
+
+    # # Lignes de référence (facultatif)
+    plt.axvline(0.25, color='grey', linewidth=1, alpha=0.2)
+    plt.axvline(0.5, color='grey', linewidth=1, alpha=0.2)
+    plt.axvline(0.75, color='grey', linewidth=1, alpha=0.2)
+    # plt.axvline(0.5, color='red', linestyle='--', linewidth=1)
+
+    # Retirer la boîte autour de la figure
+    plt.box(False)
+    plt.xticks([])
+    plt.tick_params(left=False)
+    plt.subplots_adjust(left=0.45)
+
+    # Sauvegarde dans un buffer en mémoire
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', transparent=True)
+    buf.seek(0)
+    plt.close()
+
+    # Retourner le graphique comme réponse
+    return StreamingResponse(buf, media_type="image/png")
