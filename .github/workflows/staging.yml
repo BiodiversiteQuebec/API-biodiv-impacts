@@ -28,5 +28,13 @@ jobs:
       - run: echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} >> .env.staging
       - run: echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} >> .env.staging
       - run: echo S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }} >> .env.staging
+      - run: echo IO_STAC_CATALOG_URL=${{ secrets.IO_STAC_CATALOG_URL }} >> .env.staging
+      - run: echo ACER_STAC_CATALOG_URL=${{ secrets.ACER_STAC_CATALOG_URL }} >> .env.staging
+      - run: echo GEOIO_API_SERVER=${{ secrets.GEOIO_API_SERVER }} >> .env.staging
+      - run: echo ATLAS_API_SERVER=${{ secrets.ATLAS_API_SERVER }} >> .env.staging
+      - run: echo ATLAS_API_PATH=${{ secrets.ATLAS_API_PATH }} >> .env.staging
+      - run: echo ATLAS_API_TOKEN=${{ secrets.ATLAS_API_TOKEN }} >> .env.staging
+      - run: echo BQ_IMPACTS_GITHUB_TOKEN=${{ secrets.BQ_IMPACTS_GITHUB_TOKEN }} >> .env.staging
+      - run: echo GITHUB_USERNAME=${{ secrets.GITHUB_USERNAME }} >> .env.staging
       - run: make build-staging
       - run: make start-staging
