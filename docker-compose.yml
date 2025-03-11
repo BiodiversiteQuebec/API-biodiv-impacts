@@ -1,0 +1,25 @@
+services:
+  fastapi:
+    build:
+      context: .
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        BQ_IMPACTS_GITHUB_TOKEN: ${BQ_IMPACTS_GITHUB_TOKEN}
+    container_name: test-fastapi
+    volumes:
+      - .:/app
+      - /app/__pycache__/
+    env_file: 
+      - .env  # This ensures Docker loads the variables from .env
+    ports:
+      - "8080:8080"
+    environment:
+      - IO_STAC_CATALOG_URL=${IO_STAC_CATALOG_URL}
+      - ACER_STAC_CATALOG_URL=${ACER_STAC_CATALOG_URL}
+      - GEOIO_API_SERVER=${GEOIO_API_SERVER}
+      - ATLAS_API_SERVER=${ATLAS_API_SERVER}
+      - ATLAS_API_PATH=${ATLAS_API_PATH}
+      - ATLAS_API_TOKEN=${ATLAS_API_TOKEN}
+      - BQ_IMPACTS_GITHUB_TOKEN=${BQ_IMPACTS_GITHUB_TOKEN}
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
