@@ -21,7 +21,11 @@ from bq_impact_indicators.invasive_exotics import compute_invasive_exotics
 from bq_impact_indicators.species_at_risk import compute_species_at_risk
 
 
-app = FastAPI()
+app = FastAPI(  
+    root_path="/api/impacts",  # Ensure this matches your Nginx path
+    openapi_url="/api/impacts/openapi.json",
+    docs_url="/api/impacts/docs",
+    redoc_url="/api/impacts/redoc")
 
 class InvasiveExoticsRequest(BaseModel):
     geojson: dict
