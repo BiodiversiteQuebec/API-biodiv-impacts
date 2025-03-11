@@ -1,0 +1,32 @@
+name: envelop staging workflow #
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: deploying envelop in staging
+        uses: actions/checkout@v3
+      - run: echo VITE_APP_BASEURL=${{ secrets.REACT_APP_BASEURL }} >> .env.staging
+      - run: echo VITE_APP_BASEURL_ATLAS=${{ secrets.VITE_APP_BASEURL_ATLAS }} >> .env.staging
+      - run: echo VITE_APP_BASEURL=${{ secrets.VITE_APP_BASEURL }} >> .env.staging
+      - run: echo VITE_APP_BEARER=${{ secrets.VITE_APP_BEARER }} >> .env.staging
+      - run: echo VITE_APP_BEARER_PUBLIC_API=${{ secrets.VITE_APP_BEARER_PUBLIC_API }} >> .env.staging
+      - run: echo VITE_APP_DEFAULT_LOCALE=${{ secrets.VITE_APP_DEFAULT_LOCALE }} >> .env.staging
+      - run: echo VITE_APP_STRAPI_API=${{ secrets.VITE_APP_STRAPI_API }} >> .env.staging
+      - run: echo VITE_APP_BEARER_ATLAS=${{ secrets.VITE_APP_BEARER_ATLAS }} >> .env.staging
+      - run: echo REACT_PORT=${{ secrets.REACT_PORT }} >> .env.staging
+      - run: echo REACT_PORT_EXTERNAL=${{ secrets.REACT_PORT_EXTERNAL }} >> .env.staging
+      - run: echo NGINX_PORT=${{ secrets.NGINX_PORT }} >> .env.staging
+      - run: echo NGINX_PORT_PROD=${{ secrets.NGINX_PORT_PROD }} >> .env.staging
+      - run: echo NGINX_PORT_STAGING=${{ secrets.NGINX_PORT_STAGING }} >> .env.staging
+      - run: echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} >> .env.staging
+      - run: echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} >> .env.staging
+      - run: echo S3_ENDPOINT_URL=${{ secrets.S3_ENDPOINT_URL }} >> .env.staging
+      - run: make build-staging
+      - run: make start-staging
