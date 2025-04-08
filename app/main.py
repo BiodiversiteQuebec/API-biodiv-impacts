@@ -54,7 +54,7 @@ async def indicateurs(request: IndicateursRequest):
 
 
 @app.post("/compute_connectivity")
-def connectivity_indicator(geojson: dict):
+def connectivity_indicator(geojson: dict = Body(...)):
     """
     Endpoint to compute connectivity indicator.
 
@@ -73,7 +73,7 @@ def connectivity_indicator(geojson: dict):
     return result
 
 @app.post("/carbon_stocks")
-def carbon_stocks_indicator(geojson: dict):
+def carbon_stocks_indicator(geojson: dict = Body(...)):
     """
     Endpoint to calculate carbon stocks indicator.
 
@@ -147,7 +147,7 @@ def ecosystem_services_indicator(geojson: dict, distance_max: float, milieu: str
     return result
 
 @app.post("/habitat_destruction")
-def habitat_destruction_indicator(geojson: dict = { "type": "Polygon", "coordinates": [ [ [ -71.923109522861893, 45.37836376463364 ], [ -71.923149350064904, 45.373355928601626 ], [ -71.912435832458442, 45.373271994610192 ], [ -71.912515486864436, 45.378307813608295 ], [ -71.923109522861893, 45.37836376463364 ] ] ] }):
+def habitat_destruction_indicator(geojson: dict = Body(...)):
     """
     Endpoint to calculate the habitat destruction indicator.
 
@@ -163,7 +163,7 @@ def habitat_destruction_indicator(geojson: dict = { "type": "Polygon", "coordina
     return result
 
 @app.post("/human_footprint")
-def human_footprint_indicator(geojson: dict = { "type": "Polygon", "coordinates": [ [ [ -71.923109522861893, 45.37836376463364 ], [ -71.923149350064904, 45.373355928601626 ], [ -71.912435832458442, 45.373271994610192 ], [ -71.912515486864436, 45.378307813608295 ], [ -71.923109522861893, 45.37836376463364 ] ] ] }):
+def human_footprint_indicator(geojson: dict = Body(...)):
     """
     Endpoint to calculate the human footprint indicator.
 
@@ -180,8 +180,8 @@ def human_footprint_indicator(geojson: dict = { "type": "Polygon", "coordinates"
 
 @app.post("/invasive_exotics")
 def invasive_exotics_indicator(
-        geojson: dict = { "type": "Polygon", "coordinates": [ [ [ -71.923109522861893, 45.37836376463364 ], [ -71.923149350064904, 45.373355928601626 ], [ -71.912435832458442, 45.373271994610192 ], [ -71.912515486864436, 45.378307813608295 ], [ -71.923109522861893, 45.37836376463364 ] ] ] },
-        survey: dict = {"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": True, "Q9": True}):
+        geojson: dict = Body(...),
+        survey: dict = {"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": False, "Q9": False}):
     """
     Endpoint to calculate the invasive exotics indicator.
 
@@ -199,7 +199,7 @@ def invasive_exotics_indicator(
     return result
 
 @app.post("/species_at_risk")
-def species_at_risk_indicator(geojson: dict = { "type": "Polygon", "coordinates": [ [ [ -71.923109522861893, 45.37836376463364 ], [ -71.923149350064904, 45.373355928601626 ], [ -71.912435832458442, 45.373271994610192 ], [ -71.912515486864436, 45.378307813608295 ], [ -71.923109522861893, 45.37836376463364 ] ] ] }):
+def species_at_risk_indicator(geojson: dict = Body(...)):
     """
     Endpoint to calculate the species at risk indicator.
 
