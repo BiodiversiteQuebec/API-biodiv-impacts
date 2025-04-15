@@ -247,19 +247,19 @@ plt.rcParams['font.family'] = 'sans-serif'
 @app.get("/graph")
 def generate_graph():
     # Données de l'exemple
-    categories = ["Destruction d'habitat", "Espèces exotiques envahissantes", "Services écosystémiques", 
-                  "Espèces à statut", "Stresseurs cumulés", "Destruction des puits de carbone",
+    categories = ["Destruction d'habitat", "Espèces exotiques envahissantes", "Services rendus par la nature", 
+                  "Espèces à statut", "Empreinte humaine", "Destruction de puits de carbone",
                   "Connectivité", "Pollution", "Conservation"]
     ## Add a few white spaces to the right of the categories
     categories = [cat + " " * 10 for cat in categories]
-    values = [0.77, 0.50, 0.39, 0.37, 0.20, 0.16, 0.15, 0.12, 0.07]
+    values = [0.29, 1, 0.34, 1, 0.19, 0.03, 0.00, 0.00, 0.00]
 
     # Trier les catégories et les valeurs en fonction des valeurs
     sorted_pairs = sorted(zip(values, categories), reverse=False)
     sorted_values, sorted_categories = zip(*sorted_pairs)
 
     # Création du graphique avec Matplotlib
-    plt.figure(figsize=(7, 4), facecolor='none')
+    plt.figure(figsize=(6, 2.5), facecolor='none')
     # plt.hlines(y=sorted_categories, xmin=0, xmax=1, color='gray', alpha=0.7)
     # plt.scatter(sorted_values, sorted_categories, color='black', zorder=8)
 
@@ -268,7 +268,7 @@ def generate_graph():
     #     plt.text(-0.06, category, f'{value:.2f}', va='center', ha='left', color='black')
 
     # Utiliser un colormap pour le dégradé de couleur
-    cmap = plt.get_cmap("RdYlGn_r")
+    cmap = plt.get_cmap("YlOrBr")
     norm = plt.Normalize(0, 1)
     gradient = np.linspace(0, 1, 256)
     gradient = np.vstack((gradient, gradient))
@@ -284,7 +284,7 @@ def generate_graph():
 
     # Ajouter les valeurs à côté des catégories
     for value, category in zip(sorted_values, sorted_categories):
-        plt.scatter(value, category, color='black', zorder=8, s=300)
+        plt.scatter(value, category, color='black', zorder=8, s=150)
         plt.text(-0.17, category, f'{value:.2f}', va='center', ha='left', color='black')
 
 
@@ -298,7 +298,7 @@ def generate_graph():
     plt.box(False)
     plt.xticks([])
     plt.tick_params(left=False)
-    plt.subplots_adjust(left=0.45)
+    plt.tight_layout()#plt.subplots_adjust(left=0.45)
 
     # Sauvegarde dans un buffer en mémoire
     buf = io.BytesIO()
