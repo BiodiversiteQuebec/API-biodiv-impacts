@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5436,
+            "driver": "PostgreSQL",
+            "name": "market data",
+            "database": "market_data",
+            "username": "willy",
+            "password": "password"
+        }
+    ]
+}
