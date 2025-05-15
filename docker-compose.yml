@@ -6,6 +6,7 @@ services:
         MY_GITHUB_USERNAME: ${MY_GITHUB_USERNAME}
         BQ_IMPACTS_GITHUB_TOKEN: ${BQ_IMPACTS_GITHUB_TOKEN}
     container_name: impacts-fastapi
+    restart: always
     volumes:
       - .:/app
       - /app/__pycache__/
