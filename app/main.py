@@ -53,12 +53,17 @@ async def indicateurs(request: IndicateursRequest):
     return res
 
 
-@app.post("/compute_connectivity")
-def connectivity_indicator(geojson: dict = Body(...)):
+@app.post("/connectivity")
+def connectivity_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        example={"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] },
+    )
+):
     """
     Endpoint to compute connectivity indicator.
 
-    This endpoint receives a GeoJSON object and computes the connectivity indicator
+    This endpoint receives a GeoJSON polygon and computes the connectivity indicator
     based on the provided geographical data.
 
     Args:
@@ -73,7 +78,12 @@ def connectivity_indicator(geojson: dict = Body(...)):
     return result
 
 @app.post("/carbon_stocks")
-def carbon_stocks_indicator(geojson: dict = Body(...)):
+def carbon_stocks_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        example={"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] },
+    )
+):
     """
     Endpoint to calculate carbon stocks indicator.
 
@@ -93,7 +103,19 @@ def carbon_stocks_indicator(geojson: dict = Body(...)):
     return result
 
 @app.post("/pollution")
-def pollution_indicator(survey: dict):
+def pollution_indicator(survey: dict = Body(
+        ...,
+        description="Dictionnaire du format id:{'quantity': float, 'units': char}.",
+        example={
+            "1": {"quantity": 0.006856416, "units": "tonnes"},
+            "4": {"quantity": 0.001469232, "units": "tonnes"},
+            "254": {"quantity": 1.0651932, "units": "tonnes"},
+            "255": {"quantity": 5.754492, "units": "tonnes"},
+            "256": {"quantity": 0.13345524, "units": "tonnes"},
+            "287": {"quantity": 0.04652568, "units": "tonnes"}
+        }
+    )
+):
     """
     Endpoint to calculate the pollution indicator based on the provided survey data.
 
@@ -109,7 +131,17 @@ def pollution_indicator(survey: dict):
     return result
 
 @app.post("/conservation")
-def conservation_indicator(geojson: dict, influence_distance: float):
+def conservation_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        examples=[{"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] }],
+    ), 
+    influence_distance: float = Body(
+        ...,
+        description="Distance d'influence en dehors du polygone en mètres.",
+        examples=[500]
+    )
+):
     """
     Endpoint to calculate the conservation indicator for a given geographical area.
 
@@ -147,7 +179,12 @@ def ecosystem_services_indicator(geojson: dict, distance_max: float, milieu: str
     return result
 
 @app.post("/habitat_destruction")
-def habitat_destruction_indicator(geojson: dict = Body(...)):
+def habitat_destruction_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        example={"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] },
+    )
+    ):
     """
     Endpoint to calculate the habitat destruction indicator.
 
@@ -163,7 +200,12 @@ def habitat_destruction_indicator(geojson: dict = Body(...)):
     return result
 
 @app.post("/human_footprint")
-def human_footprint_indicator(geojson: dict = Body(...)):
+def human_footprint_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        example={"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] },
+    )
+):
     """
     Endpoint to calculate the human footprint indicator.
 
@@ -180,8 +222,19 @@ def human_footprint_indicator(geojson: dict = Body(...)):
 
 @app.post("/invasive_exotics")
 def invasive_exotics_indicator(
-        geojson: dict = Body(...),
-        survey: dict = {"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": False, "Q9": False}):
+        geojson: dict = Body(
+            ...,
+            description="Polygone GeoJSON décrivant la zone d'intérêt.",
+            examples=[
+                {"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] }
+            ]
+        ),
+        survey: dict = Body(
+            ...,
+            description="Dictionnaire des réponses au sondage sur les exotiques envahissantes.",
+            examples=[{"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": False, "Q9": False}],
+        )
+    ):
     """
     Endpoint to calculate the invasive exotics indicator.
 
@@ -199,7 +252,12 @@ def invasive_exotics_indicator(
     return result
 
 @app.post("/species_at_risk")
-def species_at_risk_indicator(geojson: dict = Body(...)):
+def species_at_risk_indicator(geojson: dict = Body(
+        ...,
+        description="Polygone GeoJSON décrivant la zone d'intérêt.",
+        example={"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] },
+    )
+):
     """
     Endpoint to calculate the species at risk indicator.
 
