@@ -105,7 +105,7 @@ def carbon_stocks_indicator(geojson: dict = Body(
 @app.post("/pollution")
 def pollution_indicator(survey: dict = Body(
         ...,
-        description="Dictionnaire du format id:{'quantity': float, 'units': char}.",
+        description="Dictionnaire du format id:{'quantity': float, 'units': str (e.g., 'tonnes')}.",
         example={
             "1": {"quantity": 0.006856416, "units": "tonnes"},
             "4": {"quantity": 0.001469232, "units": "tonnes"},
