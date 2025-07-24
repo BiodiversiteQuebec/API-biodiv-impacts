@@ -271,3 +271,141 @@ def species_at_risk_indicator(geojson: dict = Body(
     """
     result = compute_species_at_risk(geojson)
     return result
+
+
+
+@app.post("/test_case")
+def compute_indicators(
+        geojson: dict = Body(
+            ...,
+            description="Polygone GeoJSON décrivant la zone d'intérêt.",
+            examples=[
+                {"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] }
+            ]
+        ),
+        influence_distance: float = Body(
+            ...,
+            description="Distance d'influence en dehors du polygone en mètres.",
+            examples=[500]
+        ),
+        distance_max: float = Body(
+            ...,
+            description="Distance maximale en mètres à considérer pour les services écosystémiques.",
+            examples=[10000]
+        ),
+        milieu: Literal["urbain", "rural", "agricole"] = Body(
+            "urbain",
+            description="Type de milieu pour les services écosystémiques.",
+            examples=["urbain"]
+        ),
+        survey_pollution: dict = Body(
+            ...,
+            description="Dictionnaire du format INRP_ID:{'quantity': float, 'units': char}.",
+            examples=[
+                {
+                    "1": {"quantity": 0.006856416, "units": "tonnes"},
+                    "4": {"quantity": 0.001469232, "units": "tonnes"},
+                    "254": {"quantity": 1.0651932, "units": "tonnes"},
+                    "255": {"quantity": 5.754492, "units": "tonnes"},
+                    "256": {"quantity": 0.13345524, "units": "tonnes"},
+                    "287": {"quantity": 0.04652568, "units": "tonnes"}
+                }
+            ]
+        ),
+        survey_exotics: dict = Body(
+            ...,
+            description="Dictionnaire des réponses au sondage sur les exotiques envahissantes.",
+            examples=[{"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": False, "Q9": False}],
+        )
+):
+    """
+    Endpoint to compute the indicators in parallel.
+    This endpoint receives a GeoJSON polygon and various parameters to compute
+    indicators related to ecosystem services, species at risk, conservation, habitat
+    destruction, pollution, invasive exotics, connectivity, human footprint, and carbon stocks.
+    It uses multiprocessing to compute these indicators in parallel for efficiency.
+    Args:
+        geojson_polygon (dict): A GeoJSON object representing the polygon of interest.
+        influence_distance (float): Distance of influence outside the polygon in meters.
+        distance_max (float): Maximum distance to consider for ecosystem services in meters.
+        milieu (Literal["urbain", "rural", "agricole"]): Type of environment for ecosystem services.
+        survey_pollution (dict): Dictionary containing pollution survey data.
+        survey_exotics (dict): Dictionary containing invasive exotics survey data.
+    Returns:
+        str: A summary of the computed indicators, sorted by their result values.
+    """
+    from multiprocessing import Process, Queue
+
+    queue = Queue()
+    processes = [
+        Process(target=worker_species_at_risk, args=(queue, geojson)),
+        Process(target=worker_conservation, args=(queue, geojson, influence_distance)),
+        Process(target=worker_habitat_destruction, args=(queue, geojson)),
+        Process(target=worker_pollution, args=(queue, survey_pollution)),
+        Process(target=worker_invasive_exotics, args=(queue, geojson, survey_exotics)),
+        Process(target=worker_connectivity, args=(queue, geojson)),
+        Process(target=worker_human_footprint, args=(queue, geojson)),
+        Process(target=worker_carbon_stocks, args=(queue, geojson)),
+        Process(target=worker_ecosystem_services, args=(queue, geojson, distance_max, milieu))
+    ]
+
+    for process in processes:
+        process.start()
+
+    for process in processes:
+        process.join()
+
+    # Collect results from the queue
+    results = []
+    while not queue.empty():
+        result = queue.get()
+        results.append(result)
+
+    ## Order results by "indicator_value"
+    sorted_results = sorted(results, key=lambda x: x.get("indicator_value", 0), reverse=True)
+
+    # Create a summary of the results
+    summary = "Sommaire des résultats :\n"
+    for result in sorted_results:
+        ## Parse the response dict and extract the desired fields
+        indicator = result.get("indicator", "NaN")
+        indicator_value = result.get("indicator_value", "NaN")
+        summary += f"- {indicator}: {indicator_value}\n"  
+
+    result_json = {
+        "summary": summary,
+        "indicators": sorted_results
+    }
+
+    # Log the summary
+    return result_json
+
+
+# Define worker functions for each indicator
+def worker_species_at_risk(q, geojson):
+    result = compute_species_at_risk(geojson)
+    q.put(result)
+def worker_conservation(q, geojson, influence_distance):
+    result = compute_conservation(geojson, influence_distance)
+    q.put(result)
+def worker_habitat_destruction(q, geojson):
+    result = compute_habitat_destruction(geojson)
+    q.put(result)
+def worker_pollution(q, survey_pollution):
+    result = compute_pollution(survey_pollution)
+    q.put(result)
+def worker_invasive_exotics(q, geojson, survey_exotics):
+    result = compute_invasive_exotics(geojson, survey_exotics)
+    q.put(result)
+def worker_connectivity(q, geojson):
+    result = compute_connectivity(geojson)
+    q.put(result)
+def worker_human_footprint(q, geojson):
+    result = compute_human_footprint(geojson)
+    q.put(result)
+def worker_carbon_stocks(q, geojson):
+    result = compute_carbon_stocks(geojson)
+    q.put(result)
+def worker_ecosystem_services(q, geojson, distance_max, milieu):
+    result = compute_ecosystem_services(geojson, distance_max, milieu)
+    q.put(result)
