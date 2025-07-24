@@ -103,7 +103,7 @@ def carbon_stocks_indicator(geojson: dict = Body(
     return result
 
 @app.post("/pollution")
-def pollution_indicator(survey: dict = Body(
+def pollution_indicator(survey_pollution: dict = Body(
         ...,
         description="Dictionnaire du format id:{'quantity': float, 'units': char}.",
         example={
@@ -121,13 +121,13 @@ def pollution_indicator(survey: dict = Body(
 
     Args:
 
-        survey (dict): A dictionary containing survey data used to compute the pollution indicator.
+        survey_pollution (dict): A dictionary containing survey data used to compute the pollution indicator.
 
     Returns:
 
         dict: A dictionary with the computed pollution indicator and intermediate results.
     """
-    result = compute_pollution(survey)
+    result = compute_pollution(survey_pollution)
     return result
 
 @app.post("/conservation")
@@ -229,7 +229,7 @@ def invasive_exotics_indicator(
                 {"type": "Polygon", "coordinates": [ [ [ -72.105757756705444, 45.373220204006415 ], [ -72.112517052360417, 45.370936688061363 ], [ -72.111975292909051, 45.387204727363311 ], [ -72.105372599595512, 45.387014484949106 ], [ -72.105757756705444, 45.373220204006415 ] ] ] }
             ]
         ),
-        survey: dict = Body(
+        survey_exotics: dict = Body(
             ...,
             description="Dictionnaire des réponses au sondage sur les exotiques envahissantes.",
             examples=[{"Q1": False, "Q2": False, "Q3": False, "Q4": False, "Q5": False, "Q6": False, "Q7": False, "Q8": False, "Q9": False}],
@@ -242,13 +242,13 @@ def invasive_exotics_indicator(
 
         geojson (dict): A GeoJSON object representing the geographical area.
 
-        survey (dict): A dictionary containing survey data used to compute the invasive exotics indicator.
+        survey_exotics (dict): A dictionary containing survey data used to compute the invasive exotics indicator.
 
     Returns:
 
         dict: A dictionary containing the calculated invasive exotics indicator.
     """
-    result = compute_invasive_exotics(geojson, survey)
+    result = compute_invasive_exotics(geojson, survey_exotics)
     return result
 
 @app.post("/species_at_risk")
