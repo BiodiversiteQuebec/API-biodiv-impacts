@@ -4,7 +4,18 @@
 ```
 python3 -m venv .venv
 source .venv/bin/activate
+
+set -a
+source .env
+set +a
 python3 -m pip install -r requirements.txt
+
+```
+
+### Updating only the bq_impact_indicators package
+```
+set -a && source .env && set +a
+python3 -m pip install --force-reinstall --no-deps "git+https://${MY_GITHUB_USERNAME}:${BQ_IMPACTS_GITHUB_TOKEN}@github.com/BiodiversiteQuebec/bq_impact_indicators.git@demo/all-indicators-fixed"
 ```
 
 

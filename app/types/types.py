@@ -1,21 +1,34 @@
-from typing import List, Tuple
+import json
+from typing import Any, List, Tuple, Union, Dict, Optional
 from pydantic import BaseModel
+from shapely import Polygon
+import geopandas as gpd
 
 ############################################
 ################ENTITIES#####################
 ############################################
-class Polluant(BaseModel):
-    name: str
-    quantity: float
-
-class EEE_QSTR(BaseModel):
-    no_qstr: int
-    answer: str
 
 #Potentially change that for a stand lib for polygones Geopandas?
 class Polygone(BaseModel):
-    name: str
+    name: Optional[str] = "Zone d'intérêt"
     points: List[Tuple[float, float]]
+
+
+    def model_dump_json(self):
+        return {
+            "name": self.name,
+            "points": self.points
+        }
+    def to_geojson(self):
+        polygon = Polygon(self.points)
+        geojson = gpd.GeoSeries([polygon]).__geo_interface__
+        return geojson
+
+    def to_gpd_polygon(self):
+        polygon = Polygon(self.points)
+        return gpd.GeoDataFrame(index=[0], geometry=[polygon])
+
+
 
 
 ############################################
@@ -24,6 +37,10 @@ class Polygone(BaseModel):
 
 class IndicateursRequest(BaseModel):
     # Define the fields for your request body here
-    poly: Polygone
-    eee_qstr: List[EEE_QSTR]
-    pollution_qstr: List[Polluant]
+    poly: Union[Polygone, Dict[str, Any]]
+    eee_qstr: Dict[str, Any] = {}
+    pollution_qstr: Dict[str, Any] = {}
+    project_name: Optional[str] = "Projet Démo"
+    creator: Optional[str] = "Biodiversité Québec"
+    created_date: Optional[str] = "2025-01-01T00:00:00Z"
+
