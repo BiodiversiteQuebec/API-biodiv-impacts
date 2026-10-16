@@ -2,7 +2,6 @@ import json
 from typing import Any, List, Tuple, Union, Dict, Optional
 from pydantic import BaseModel
 from shapely import Polygon
-import geopandas as gpd
 
 ############################################
 ################ENTITIES#####################
@@ -21,12 +20,7 @@ class Polygone(BaseModel):
         }
     def to_geojson(self):
         polygon = Polygon(self.points)
-        geojson = gpd.GeoSeries([polygon]).__geo_interface__
-        return geojson
-
-    def to_gpd_polygon(self):
-        polygon = Polygon(self.points)
-        return gpd.GeoDataFrame(index=[0], geometry=[polygon])
+        return polygon.__geo_interface__
 
 
 

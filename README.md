@@ -33,3 +33,49 @@ source .venv/bin/activate
 ```
 fastapi dev app/main.py
 ```
+
+---
+
+## Déploiement avec Docker
+
+### 1. Configuration des variables d'environnement
+Copiez le modèle d'environnement et renseignez vos identifiants :
+```bash
+cp .env.example .env
+```
+
+### 2. Déploiement rapide (via Makefile)
+- **Construire l'image :**
+  ```bash
+  make build
+  ```
+- **Démarrer en arrière-plan (mode déploiement) :**
+  ```bash
+  make up
+  ```
+- **Consulter les logs :**
+  ```bash
+  make logs
+  ```
+- **Arrêter le conteneur :**
+  ```bash
+  make down
+  ```
+- **Mode développement (avec montage de code et rechargement à chaud) :**
+  ```bash
+  make dev
+  ```
+
+### 3. Déploiement Staging / Production
+- **Staging :**
+  ```bash
+  make build-staging
+  make start-staging
+  ```
+- **Production :**
+  ```bash
+  make build-production
+  make start-production
+  ```
+
+L'API est accessible par défaut sur `http://localhost:8042` (ou le port configuré dans `PORT`), et l'état de santé est vérifiable sur `http://localhost:8042/health`.

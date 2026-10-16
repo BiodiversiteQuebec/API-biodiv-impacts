@@ -1,32 +1,43 @@
-##### production ######
-.PHONY: build-staging
-build-staging: ## Build the development docker image.
-	docker compose --env-file .env.staging  -f docker-compose.yml build --no-cache
+.PHONY: help build up down restart logs dev build-staging start-staging stop-staging build-production start-production stop-production
 
-#.PHONY: start-staging
-#start-staging: ## Start the development docker container.
-#	docker compose --env-file ./.env.staging  -f docker-compose.yml up -d
+help: ## Show this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: start-staging
-start-staging: ## Copy the files to the static site deployment location.
-		docker compose --env-file .env.staging  -f docker-compose.yml up -d;
-		
-		
+##### Default / Local Deployment (.env) #####
+build: ## Build the docker image using .env
+	docker compose --env-file .env build
 
-.PHONY: stop-staging
-stop-staging: ## Stop the development docker container.
-	docker compose --env-file .env.staging  -f docker-compose.yml down
+up: ## Start the container in detached mode
+	docker compose --env-file .env up -d
 
+down: ## Stop the container
+	docker compose --env-file .env down
 
-	##### production ######
-.PHONY: build-production
-build-production: ## Build the development docker image.
-	docker compose --env-file .env.production  -f docker-compose.yml build
+restart: ## Restart the container
+	docker compose --env-file .env restart
 
-.PHONY: start-production
-start-production: ## Start the development docker container.
+logs: ## Follow container logs
+	docker compose --env-file .env logs -f
 
-		docker compose --env-file .env.production  -f docker-compose.yml up -d;
-.PHONY: stop-production
-stop-production: ## Stop the development docker container.
-	docker compose --env-file .env.production  -f docker-compose.yml down
+dev: ## Start container with code mount and hot-reloading for local dev
+	docker compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+##### Staging Deployment (.env.staging) #####
+build-staging: ## Build the staging docker image without cache
+	docker compose --env-file .env.staging -f docker-compose.yml build --no-cache
+
+start-staging: ## Start the staging container in detached mode
+	docker compose --env-file .env.staging -f docker-compose.yml up -d
+
+stop-staging: ## Stop the staging container
+	docker compose --env-file .env.staging -f docker-compose.yml down
+
+##### Production Deployment (.env.production) #####
+build-production: ## Build the production docker image
+	docker compose --env-file .env.production -f docker-compose.yml build
+
+start-production: ## Start the production container in detached mode
+	docker compose --env-file .env.production -f docker-compose.yml up -d
+
+stop-production: ## Stop the production container
+	docker compose --env-file .env.production -f docker-compose.yml down
