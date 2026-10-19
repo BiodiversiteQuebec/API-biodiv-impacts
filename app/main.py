@@ -1,56 +1,76 @@
-
 import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
 import geojson
-from fastapi import Body
 
-from app.types.types import IndicateursRequest
+from app.types.types import DataFormSubmission
 
-from bq_impact_indicators import compute_carbon_stocks, compute_connectivity, compute_conservation, compute_ecosystem_services, compute_habitat_destruction, compute_invasive_exotics, compute_pollution, compute_species_at_risk, compute_human_footprint
-
+from bq_impact_indicators import (
+    compute_carbon_stocks,
+    compute_connectivity,
+    compute_conservation,
+    compute_ecosystem_services,
+    compute_habitat_destruction,
+    compute_invasive_exotics,
+    compute_pollution,
+    compute_species_at_risk,
+    compute_human_footprint,
+)
 
 from app.utils import (
     convert_to_geojson_polygon,
-    save_request_data_as_json,
-    to_eee_survey,
+    extract_eee_survey,
+    parse_influence_distance,
+    save_request_log,
     NaNJSONResponse,
 )
 
-
-
 app = FastAPI(default_response_class=NaNJSONResponse)
 
-class InvasiveExoticsRequest(BaseModel):
-    geojson: dict
-    survey: dict
-    weights: dict = None
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
 
-# This is where you could put your code for Indicateur 1
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.post("/indicateurs")
-async def indicateurs(request: IndicateursRequest):
+async def indicateurs(submission: DataFormSubmission):
     start_time = time.time()
-    poly, eee_qstr, pollution_qstr = request.poly, request.eee_qstr, request.pollution_qstr
-    poly = convert_to_geojson_polygon(poly)
-    
-    eee_survey, eee_weights = to_eee_survey(eee_qstr)
-    poll_survey = pollution_qstr
+    form = submission.form
+
+    if not form.empriseGeospatiale:
+        raise HTTPException(
+            status_code=400,
+            detail="Une emprise géospatiale (polygone) est requise pour calculer les indicateurs."
+        )
+
+    try:
+        poly = convert_to_geojson_polygon(form.empriseGeospatiale)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Erreur de format pour l'emprise géospatiale : {str(e)}"
+        )
+
+    project_name = form.nomProjet.strip() if form.nomProjet else "Projet Démo"
+    creator = form.nomPromoteur.strip() if form.nomPromoteur else "Biodiversité Québec"
+    influence_distance = parse_influence_distance(form.aireInfluenceValeur)
+    eee_survey, eee_weights = extract_eee_survey(form)
 
     functions = [
         (compute_connectivity, (poly,)),
-        (compute_conservation, (poly, 10)),
-        (compute_species_at_risk, (poly,)),
+        (compute_conservation, (poly, influence_distance)),
+        (compute_species_at_risk, (poly, influence_distance)),
         (compute_ecosystem_services, (poly, 1000)),
         (compute_habitat_destruction, (poly,)),
         (compute_invasive_exotics, (poly, eee_survey, eee_weights)),
-        (compute_pollution, (poll_survey,)),
+        (compute_pollution, ({},)),
         (compute_carbon_stocks, (poly,)),
         (compute_human_footprint, (poly,)),
     ]
@@ -75,7 +95,7 @@ async def indicateurs(request: IndicateursRequest):
         
         indicators_list = []
         for func, args in functions:
-            func_name = getattr(func, "__name__", getattr(func, "_mock_name", str(func)))
+            func_name = getattr(func, "__name__", str(func))
             default_id = indicator_ids.get(func_name, func_name)
             future = func_to_future[func]
             try:
@@ -109,242 +129,86 @@ async def indicateurs(request: IndicateursRequest):
             buffered_polygon = item["buffered_polygon"]
             break
 
-    area_of_interest = buffered_polygon
-    project_name = request.project_name or "Projet Démo"
-    creator = request.creator or "Biodiversité Québec"
-    created_date = request.created_date or "2025-01-01T00:00:00Z"
-
     response = {
-        "total_computational_time": total_computational_time,
-        "polygon": poly,
-        "area_of_interest": area_of_interest,
+        "projectId": submission.projectId,
         "project_name": project_name,
         "creator": creator,
+        "total_computational_time": total_computational_time,
+        "polygon": poly,
+        "area_of_interest": buffered_polygon,
         "computed_date": computed_date,
-        "created_date": created_date,
+        "created_date": computed_date,
         "indicators": indicators_list,
     }
 
-
-    save_request_data_as_json(poly, eee_qstr, pollution_qstr)
+    save_request_log(submission.model_dump())
     return response
 
 
+# Individual indicator endpoints (for standalone calls / debugging)
 @app.post("/compute_connectivity")
 def connectivity_indicator(geojson: dict):
-    """
-    Endpoint to compute connectivity indicator.
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Connectivité": compute_connectivity(poly)}
 
-    This endpoint receives a GeoJSON object and computes the connectivity indicator
-    based on the provided geographical data.
-
-    Args:
-
-        geojson (dict): A dictionary representing the GeoJSON object containing
-                        geographical features.
-
-    Returns:
-
-        dict: A dictionary containing the computed connectivity indicator with the key "Connectivité".
-    """
-    poly = geojson.get("geojson", geojson)
-    result = compute_connectivity(poly)
-    return {"Connectivité": result}
 
 @app.post("/carbon_stocks")
 def carbon_stocks_indicator(geojson: dict):
-    """
-    Endpoint to calculate carbon stocks indicator.
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Stocks de carbone": compute_carbon_stocks(poly)}
 
-    This endpoint receives a GeoJSON object and computes the carbon stocks
-    based on the provided geographical data.
-
-    Args:
-
-        geojson (dict): A dictionary representing the GeoJSON object containing
-                        the geographical data.
-
-    Returns:
-
-        dict: A dictionary with the key "Stocks de carbone" and the computed
-            carbon stocks as the value.
-    """
-    poly = geojson.get("geojson", geojson)
-    result = compute_carbon_stocks(poly)
-    return {"Stocks de carbone": result}
 
 @app.post("/pollution")
 def pollution_indicator(survey: dict):
-    """
-    Endpoint to calculate the pollution indicator based on the provided survey data.
-
-    Args:
-
-        survey (dict): A dictionary containing survey data used to compute the pollution indicator.
-                       Each key is a pollutant ID and value contains 'units' and 'quantity'.
-
-    Returns:
-
-        dict: A dictionary with the computed pollution indicator.
-    """
     data = survey.get("survey", survey)
-    result = compute_pollution(data)
-    return {"Pollution": result}
+    return {"Pollution": compute_pollution(data)}
+
 
 @app.post("/conservation")
 def conservation_indicator(geojson: dict, influence_distance: float = 0):
-    """
-    Endpoint to calculate the conservation indicator for a given geographical area.
-
-    Args:
-        
-        geojson (dict): A GeoJSON object representing the geographical area.
-        
-        influence_distance (float): The distance of influence outside of the geojson in meters.
-
-    Returns:
-
-        dict: A dictionary containing the conservation indicator result.
-    """
     if "influence_area" in geojson:
-        influence_distance = geojson["influence_area"]
+        influence_distance = parse_influence_distance(geojson["influence_area"], 0.0)
     elif "influence_distance" in geojson:
-        influence_distance = geojson["influence_distance"]
-    poly = geojson.get("geojson", geojson)
-    result = compute_conservation(poly, influence_distance)
-    return {"Conservation": result}
+        influence_distance = parse_influence_distance(geojson["influence_distance"], 0.0)
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Conservation": compute_conservation(poly, influence_distance)}
+
 
 @app.post("/ecosystem_services")
 def ecosystem_services_indicator(geojson: dict, distance_max: float = 1000, milieu: str = "urbain"):
-    """
-    Endpoint to calculate ecosystem services indicator.
-
-    Args:
-
-        geojson (dict): GeoJSON object representing the geographical area.
-        
-        distance_max (float): Maximum distance to consider for the calculation.
-        
-        milieu (str, optional): Type of environment, default is "urbain".
-
-    Returns:
-
-        dict: A dictionary containing the calculated ecosystem services.
-    """
     if "distance_max" in geojson:
         distance_max = geojson["distance_max"]
     if "milieu" in geojson:
         milieu = geojson["milieu"]
-    poly = geojson.get("geojson", geojson)
-    result = compute_ecosystem_services(poly, distance_max, milieu)
-    return {"Services écosystémiques": result}
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Services écosystémiques": compute_ecosystem_services(poly, distance_max, milieu)}
+
 
 @app.post("/habitat_destruction")
 def habitat_destruction_indicator(geojson: dict):
-    """
-    Endpoint to calculate the habitat destruction indicator.
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Destruction de l'habitat": compute_habitat_destruction(poly)}
 
-    Args:
-
-        geojson (dict): A GeoJSON object representing the geographical area.
-
-    Returns:
-
-        dict: A dictionary containing the calculated habitat destruction indicator.
-    """
-    poly = geojson.get("geojson", geojson)
-    result = compute_habitat_destruction(poly)
-    return {"Destruction de l'habitat": result}
 
 @app.post("/human_footprint")
 def human_footprint_indicator(geojson: dict):
-    """
-    Endpoint to calculate the human footprint indicator.
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Empreinte humaine": compute_human_footprint(poly)}
 
-    Args:
-
-        geojson (dict): A GeoJSON object representing the geographical area.
-
-    Returns:
-
-        dict: A dictionary containing the calculated human footprint indicator.
-    """
-    poly = geojson.get("geojson", geojson)
-    result = compute_human_footprint(poly)
-    return {"Empreinte humaine": result}
 
 @app.post("/invasive_exotics")
-def invasive_exotics_indicator(
-        geojson: dict = Body(...),
-        survey: dict = Body(...),
-        weights: dict = Body(None)):
-    """
-    Endpoint to calculate the invasive exotics indicator.
-
-    Args:
-
-        geojson (dict): A GeoJSON object representing the geographical area.
-
-        survey (dict): A dictionary containing survey data used to compute the invasive exotics indicator.
-
-        weights (dict, optional): A dictionary containing weights for each survey question.
-
-    Returns:
-
-        dict: A dictionary containing the calculated invasive exotics indicator.
-
-    Usage:
-
-    {
-      "geojson": {
-        "type": "Polygon",
-        "coordinates": [
-            [
-                [-71.989021573308534, 45.404000415469056],
-                [-71.987038174572334, 45.402959401362089],
-                [-71.98540963380141, 45.404505556821491],
-                [-71.987028443356962, 45.40533493226846],
-                [-71.987140253500854, 45.405362234064313],
-                [-71.987237484510757, 45.405372474057657],
-                [-71.987315263440109, 45.405372473936815],
-                [-71.987402772819166, 45.405369066780658],
-                [-71.987480546508735, 45.405351995013334],
-                [-71.987543748498041, 45.405324697182159],
-                [-71.987621531580913, 45.405304216052308],
-                [-71.987670135059872, 45.405266675018261],
-                [-71.989021573308534, 45.404000415469056]
-            ]
-        eee_weights]
-      },
-      "survey": {"Q1": false, "Q2": false, "Q3": false, "Q4": false, "Q5": false, "Q6": false, "Q7": false, "Q8": false, "Q9": true, "Q10": true},
-      "weights": {"Q1": 0.0, "Q2": 0.0, "Q3": 0.0, "Q4": 0.0, "Q5": 0.0, "Q6": 0.0, "Q7": 0.0, "Q8": 0.0, "Q9": 1.0, "Q10": 1.0}
-    }
-    """
-    poly = geojson.get("geojson", geojson)
+def invasive_exotics_indicator(geojson: dict, survey: dict, weights: dict = None):
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
     if weights is None:
         weights = {k: 0.0 for k in survey.keys()}
-    result = compute_invasive_exotics(poly, survey, weights)
-    return {"Espèces exotiques envahissantes": result}
+    return {"Espèces exotiques envahissantes": compute_invasive_exotics(poly, survey, weights)}
+
 
 @app.post("/species_at_risk")
-def species_at_risk_indicator(geojson: dict = Body(...), influence_area: float = 0):
-    """
-    Endpoint to calculate the species at risk indicator.
-
-    Args:
-
-        geojson (dict): A GeoJSON object representing the geographical area.
-
-        influence_area (float, optional): The distance corresponding to the radius of the influence area in meters. Default is 0.
-
-    Returns:
-
-        dict: A dictionary containing the calculated species at risk indicator.
-    """
+def species_at_risk_indicator(geojson: dict, influence_area: float = 0):
     if "influence_area" in geojson:
-        influence_area = geojson["influence_area"]
+        influence_area = parse_influence_distance(geojson["influence_area"], 0.0)
     elif "influence_distance" in geojson:
-        influence_area = geojson["influence_distance"]
-    poly = geojson.get("geojson", geojson)
-    result = compute_species_at_risk(poly, influence_area)
-    return {"Espèces en péril": result}
+        influence_area = parse_influence_distance(geojson["influence_distance"], 0.0)
+    poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
+    return {"Espèces en péril": compute_species_at_risk(poly, influence_area)}

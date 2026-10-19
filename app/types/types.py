@@ -1,40 +1,30 @@
-import json
-from typing import Any, List, Tuple, Union, Dict, Optional
-from pydantic import BaseModel
-from shapely import Polygon
-
-############################################
-################ENTITIES#####################
-############################################
-
-#Potentially change that for a stand lib for polygones Geopandas?
-class Polygone(BaseModel):
-    name: Optional[str] = "Zone d'intérêt"
-    points: List[Tuple[float, float]]
+from typing import Any, Dict, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
 
-    def model_dump_json(self):
-        return {
-            "name": self.name,
-            "points": self.points
-        }
-    def to_geojson(self):
-        polygon = Polygon(self.points)
-        return polygon.__geo_interface__
+class DataForm(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    nomProjet: str
+    nomPromoteur: str
+    secteurActivite: Optional[str] = None
+    empriseGeospatiale: Optional[Dict[str, Any]] = None
+    aireInfluenceValeur: Optional[str] = ""
+    aireInfluenceSecteur: Optional[str] = None
+    switch_palettes: bool = Field(default=False, alias="switch-palettes")
+    switch_sols_organiques: bool = Field(default=False, alias="switch-sols-organiques")
+    solsOrganiquesRadio: Optional[str] = None
+    switch_plans_eau: bool = Field(default=False, alias="switch-plans-eau")
+    switch_canalisation: bool = Field(default=False, alias="switch-canalisation")
+    switch_milieux_aquatiques: bool = Field(default=False, alias="switch-milieux-aquatiques")
+    switch_sols_interregional: bool = Field(default=False, alias="switch-sols-interregional")
+    switch_especes_non_indigenes: bool = Field(default=False, alias="switch-especes-non-indigenes")
+    switch_produits_ligneux: bool = Field(default=False, alias="switch-produits-ligneux")
+    switch_transport_maritime: bool = Field(default=False, alias="switch-transport-maritime")
 
 
+class DataFormSubmission(BaseModel):
+    model_config = ConfigDict(extra="allow")
 
-
-############################################
-################REQUESTS#####################
-############################################
-
-class IndicateursRequest(BaseModel):
-    # Define the fields for your request body here
-    poly: Union[Polygone, Dict[str, Any]]
-    eee_qstr: Dict[str, Any] = {}
-    pollution_qstr: Dict[str, Any] = {}
-    project_name: Optional[str] = "Projet Démo"
-    creator: Optional[str] = "Biodiversité Québec"
-    created_date: Optional[str] = "2025-01-01T00:00:00Z"
-
+    projectId: str
+    form: DataForm
