@@ -19,7 +19,8 @@ RUN git clone --depth 1 -b demo/all-indicators-fixed \
     && cd /tmp/bq \
     && git lfs pull \
     && pip install --no-cache-dir . \
-    && python -c "import bq_impact_indicators, os, shutil; shutil.copytree('/tmp/bq/bq_impact_indicators/data', os.path.join(os.path.dirname(bq_impact_indicators.__file__), 'data'), dirs_exist_ok=True)" \
+    && cd /app \
+    && python -c "import bq_impact_indicators, os, shutil; dst = os.path.join(os.path.dirname(bq_impact_indicators.__file__), 'data'); shutil.copytree('/tmp/bq/bq_impact_indicators/data', dst, dirs_exist_ok=True)" \
     && rm -rf /tmp/bq
 
 # 4. Install API server dependencies
