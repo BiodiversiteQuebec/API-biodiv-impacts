@@ -152,3 +152,30 @@ def save_request_log(submission_data: dict):
             json.dump(sanitize_for_json(submission_data), f, indent=4)
     except Exception as e:
         print(f"Warning: Failed to save request log: {e}")
+
+
+def sanitize_indicator_result(ind_name: str, item: Any) -> Any:
+    """
+    Sanitize and slim down indicator output payloads:
+    - carbon_stocks: Remove massive qc_pixel_distribution array.
+    - species_at_risk: Limit species_nearest_outside to the 5 closest species.
+    """
+    if not isinstance(item, dict):
+        return item
+
+    inter = item.get("intermediate_values")
+    if ind_name == "carbon_stocks":
+        if isinstance(inter, dict):
+            inter.pop("qc_pixel_distribution", None)
+        item.pop("qc_pixel_distribution", None)
+    elif ind_name == "species_at_risk":
+        if isinstance(inter, dict):
+            nearest = inter.get("species_nearest_outside")
+            if isinstance(nearest, list):
+                sorted_nearest = sorted(
+                    nearest,
+                    key=lambda x: x.get("distance_m", float("inf")) if isinstance(x, dict) else float("inf")
+                )
+                inter["species_nearest_outside"] = sorted_nearest[:5]
+
+    return item

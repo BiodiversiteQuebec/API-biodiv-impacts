@@ -24,6 +24,7 @@ from app.utils import (
     parse_influence_distance,
     save_request_log,
     NaNJSONResponse,
+    sanitize_indicator_result,
 )
 
 app = FastAPI(default_response_class=NaNJSONResponse)
@@ -106,6 +107,7 @@ async def indicateurs(submission: DataFormSubmission):
                     item.pop("indicator", None)
                     item.pop("name", None)
                     item = {"indicator_name": ind_name, **item}
+                    item = sanitize_indicator_result(ind_name, item)
                 else:
                     item = {
                         "indicator_name": default_id,
@@ -155,7 +157,9 @@ def connectivity_indicator(geojson: dict):
 @app.post("/carbon_stocks")
 def carbon_stocks_indicator(geojson: dict):
     poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
-    return {"Stocks de carbone": compute_carbon_stocks(poly)}
+    res = compute_carbon_stocks(poly)
+    res = sanitize_indicator_result("carbon_stocks", res)
+    return {"Stocks de carbone": res}
 
 
 @app.post("/pollution")
@@ -211,4 +215,6 @@ def species_at_risk_indicator(geojson: dict, influence_area: float = 0):
     elif "influence_distance" in geojson:
         influence_area = parse_influence_distance(geojson["influence_distance"], 0.0)
     poly = convert_to_geojson_polygon(geojson.get("geojson", geojson))
-    return {"Espèces en péril": compute_species_at_risk(poly, influence_area)}
+    res = compute_species_at_risk(poly, influence_area)
+    res = sanitize_indicator_result("species_at_risk", res)
+    return {"Espèces en péril": res}
