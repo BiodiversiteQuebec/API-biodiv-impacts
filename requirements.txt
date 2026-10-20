@@ -1,4 +1,3 @@
 fastapi[standard]
 pydantic
 uvicorn
-git+https://${MY_GITHUB_USERNAME}:${BQ_IMPACTS_GITHUB_TOKEN}@github.com/BiodiversiteQuebec/bq_impact_indicators.git@demo/all-indicators-fixed
