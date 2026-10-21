@@ -8,8 +8,8 @@ services:
     image: api-biodiv-impacts:latest
     container_name: impacts-fastapi
     restart: unless-stopped
-    ports:
-      - "${PORT:-8042}:8080"
+    #ports:
+    #  - "${PORT:-8042}:8042"
     #extra_hosts:
     #  - "host.docker.internal:host-gateway"
     network_mode: host
@@ -27,7 +27,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python -c ''import urllib.request; urllib.request.urlopen("http://localhost:8080/health")''',
+          'python -c ''import urllib.request; urllib.request.urlopen("http://localhost:8042/health")''',
         ]
       interval: 30s
       timeout: 5s

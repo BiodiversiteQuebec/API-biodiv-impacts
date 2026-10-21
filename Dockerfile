@@ -34,6 +34,6 @@ ENV MY_GITHUB_USERNAME=""
 # 6. Copy application code
 COPY . ./
 
-EXPOSE 8080
+EXPOSE 8042
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8042"]
